@@ -4,6 +4,11 @@ Flask==2.2.5
 # Redis for managing the data storage
 redis==4.6.0
 
+Flask
+request
+jsonify
+Flask-Cors
+
 # Puppeteer for web scraping (via a Node.js package, referenced in setup; assumed needed for scraping through Node)
 # You may need to install Puppeteer using npm: npm install puppeteer
 
