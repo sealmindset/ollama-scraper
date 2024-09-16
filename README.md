@@ -16,7 +16,7 @@ The implementation includes:
 
 ### Node.js dependencies
 ```
-npm install puppeteer express body-parser axios ejs
+npm install puppeteer express body-parser axios ejs cheerio redis json2csv rxjs flask_cors
 ```
 
 ### Python dependencies
