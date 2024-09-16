@@ -5,6 +5,7 @@ const axios = require('axios');
 const path = require('path');
 const redis = require('redis');
 const fs = require('fs');
+const { parse } = require('json2csv'); // Import parse function from json2csv
 const {
   extractDataWithOllama,
   fetchHTML,
@@ -116,7 +117,7 @@ async function findFlaskPort() {
 
 // Render the main page
 app.get('/', (req, res) => {
-  res.render('index', { fields: [], data: {}, model: 'llama3.1' }); // Ensure default model is provided
+  res.render('index', { fields: [], data: {}, model: 'llama3.1', key: '' }); // Ensure default model is provided and key is empty
 });
 
 // Handle scraping request when the user submits the form
@@ -161,8 +162,8 @@ app.post('/scrape', async (req, res) => {
     // Log the response data to the console
     console.log('Extracted Data:', formattedData);
 
-    // Render the results on the index page
-    res.render('index', { fields: Object.keys(formattedData), data: formattedData, model });
+    // Render the results on the index page, pass the formattedDataKey as 'key'
+    res.render('index', { fields: Object.keys(formattedData), data: formattedData, model, key: formattedDataKey });
   } catch (error) {
     console.error('Error during scraping:', error);
     res.status(500).send('An error occurred during scraping.');
@@ -180,7 +181,7 @@ app.get('/view-data', async (req, res) => {
       return res.status(400).send('No data available for the provided key.');
     }
 
-    res.render('index', { fields: Object.keys(data), data, model: 'llama3.1' }); // Pass model and data to the template
+    res.render('index', { fields: Object.keys(data), data, model: 'llama3.1', key }); // Pass model and data to the template
   } catch (error) {
     console.error('Error retrieving data from Redis:', error);
     res.status(500).send('Failed to retrieve data.');
@@ -230,6 +231,9 @@ app.get('/download-csv', async (req, res) => {
         if (!res.headersSent) {
           res.status(500).send('Failed to download CSV.');
         }
+      } else {
+        // Optionally delete the file after sending
+        fs.unlinkSync(filePath);
       }
     });
   } catch (error) {
@@ -266,6 +270,9 @@ app.get('/download-json', async (req, res) => {
         if (!res.headersSent) {
           res.status(500).send('Failed to download JSON.');
         }
+      } else {
+        // Optionally delete the file after sending
+        fs.unlinkSync(filePath);
       }
     });
   } catch (error) {

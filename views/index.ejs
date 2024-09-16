@@ -2,27 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <title>Web Scraping Tool</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-  <div class="container">
-    <div class="row mt-5">
+  <div class="container my-5">
+    <!-- Scraping Configuration Section -->
+    <div class="row">
       <div class="col-md-6">
         <h3>Scraping Configuration</h3>
         <form id="scrape-form" action="/scrape" method="POST">
+          <!-- Model Selection -->
           <div class="mb-3">
             <label for="model" class="form-label">Model</label>
             <select class="form-control" name="model" id="model-select" required>
               <option value="" disabled selected>Select a model...</option>
             </select>
           </div>
+          <!-- URL Input -->
           <div class="mb-3">
             <label for="url" class="form-label">URL to Scrape</label>
             <input type="text" class="form-control" name="url" id="url-input" placeholder="Enter URL" required>
           </div>
+          <!-- Fields to Extract -->
           <div class="mb-3">
             <label for="fields" class="form-label">Fields to Extract</label>
             <input type="text" class="form-control" id="fields-input" placeholder="Enter field and press Enter">
@@ -36,14 +39,17 @@
             </div>
             <input type="hidden" name="fields" id="fields" value="<%= fields.join(',') %>">
           </div>
+          <!-- Submit Button -->
           <button type="submit" class="btn btn-primary">Scrape</button>
         </form>
       </div>
 
+      <!-- Scraping Results Section -->
       <div class="col-md-6">
         <h3>Scraping Results</h3>
         <p>Model: <%= model || 'llama3.1' %></p>
         <% if (Object.keys(data).length > 0) { %>
+          <!-- Data Table -->
           <table class="table table-striped">
             <thead>
               <tr>
@@ -63,13 +69,13 @@
               <% } %>
             </tbody>
           </table>
-          
-          <form action="/download-csv" method="GET">
-            <input type="hidden" name="csvData" value="<%= JSON.stringify(data) %>">
-            <button type="submit" class="btn btn-success">Download as CSV</button>
+          <!-- Download Buttons -->
+          <form action="/download-csv" method="GET" class="d-inline">
+            <input type="hidden" name="key" value="<%= key %>">
+            <button type="submit" class="btn btn-success me-2">Download as CSV</button>
           </form>
-          <form action="/download-json" method="GET">
-            <input type="hidden" name="jsonData" value="<%= JSON.stringify(data) %>">
+          <form action="/download-json" method="GET" class="d-inline">
+            <input type="hidden" name="key" value="<%= key %>">
             <button type="submit" class="btn btn-secondary">Download as JSON</button>
           </form>
         <% } else { %>
@@ -93,6 +99,7 @@
     </div>
   </div>
 
+  <!-- Bootstrap JS Bundle (includes Popper) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     // Fetch available models from the server and populate the dropdown
@@ -106,6 +113,11 @@
           option.textContent = model;
           modelSelect.appendChild(option);
         });
+        // Set the selected model if one was previously selected
+        const selectedModel = '<%= model %>';
+        if (selectedModel) {
+          modelSelect.value = selectedModel;
+        }
       })
       .catch(error => console.error('Error fetching models:', error));
 

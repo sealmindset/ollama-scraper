@@ -2,8 +2,10 @@ from flask import Flask, request, jsonify
 import subprocess
 import socket
 import time
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS to allow cross-origin requests
 
 def find_available_port(start=11400, end=11499):
     """Find the first available port in the specified range."""
@@ -20,8 +22,18 @@ def is_model_installed(model_name):
     """Check if the specified model is installed in Ollama."""
     try:
         result = subprocess.run(['ollama', 'list'], capture_output=True, text=True)
-        models = result.stdout.splitlines()
-        return any(model_name in model for model in models)
+        lines = result.stdout.strip().split('\n')
+        # Skip the header line
+        model_lines = lines[1:] if len(lines) > 1 else []
+        installed_models = []
+        for line in model_lines:
+            columns = line.split('\t')
+            if columns:
+                model = columns[0].strip()
+                installed_models.append(model)
+        print(f"Installed models: {installed_models}")
+        # Check for exact match
+        return model_name in installed_models
     except Exception as e:
         print(f"Error checking if model {model_name} is installed:", str(e))
         return False
@@ -31,7 +43,8 @@ def download_model(model_name, retries=3):
     try:
         print(f"Attempting to download model: {model_name}...")
         for attempt in range(retries):
-            result = subprocess.run(['ollama', 'download', model_name], capture_output=True, text=True)
+            result = subprocess.run(['ollama', 'pull', model_name], capture_output=True, text=True)
+            print(f"Download attempt {attempt + 1}: stdout: {result.stdout}, stderr: {result.stderr}")
             if result.returncode == 0:
                 print(f"Model {model_name} downloaded successfully.")
                 return True
@@ -51,8 +64,16 @@ def download_model(model_name, retries=3):
 def get_models():
     """Fetch the list of available models from Ollama."""
     try:
-        output = subprocess.run(['ollama', 'list'], capture_output=True, text=True)
-        models = output.stdout.splitlines()  # Split models into a list
+        result = subprocess.run(['ollama', 'list'], capture_output=True, text=True)
+        lines = result.stdout.strip().split('\n')
+        # Skip the header line
+        model_lines = lines[1:] if len(lines) > 1 else []
+        models = []
+        for line in model_lines:
+            columns = line.split('\t')
+            if columns:
+                model = columns[0].strip()
+                models.append(model)
         return jsonify({'models': models})
     except Exception as e:
         print("Error fetching models:", str(e))
@@ -64,6 +85,8 @@ def post_ollama():
     html_content = request.json.get('html', '')
     user_message = request.json.get('message', '')
     selected_model = request.json.get('model', 'openchat')  # Use 'openchat' as default if not specified
+
+    print(f"Selected model: {selected_model}")
 
     # Check if HTML content is provided
     if not html_content:
@@ -79,19 +102,18 @@ def post_ollama():
         f"Extract the following fields from the provided HTML content: {user_message}. "
         "Respond strictly with a valid JSON object containing the extracted fields and their values. "
         "Do not include explanations, tables, or any other text. Only return the JSON object in this format: "
-        "{\"Pillows\": [\"Pillow 1\", \"Pillow 2\"], \"Prices\": [\"Price 1\", \"Price 2\"]}."
+        "{\"Field1\": [\"Value1\", \"Value2\"], \"Field2\": [\"Value1\", \"Value2\"]}."
     )
 
     # Combine the refined prompt with the HTML content
     full_input = f"{prompt}\n{html_content}"
 
-    # Command to run the selected model
-    command = f"echo \"{full_input}\" | ollama run {selected_model}"
-
     try:
-        output = subprocess.run(command, shell=True, capture_output=True, text=True)
+        # Use subprocess without shell=True
+        command = ['ollama', 'run', selected_model]
+        output = subprocess.run(command, input=full_input, capture_output=True, text=True)
         response = output.stdout if output.returncode == 0 else output.stderr
-        print("Executed command:", command)
+        print("Executed command:", ' '.join(command))
         print(f"{selected_model} response:", response)
         return jsonify({'response': response})
     except Exception as e:
